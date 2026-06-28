@@ -3,11 +3,8 @@ package com.annakuzniak.code_review_agent.webhook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.*;
+import com.annakuzniak.code_review_agent.review.CodeReviewService;
 
 @RestController
 @RequestMapping("/webhook")
@@ -15,11 +12,17 @@ public class WebhookController {
 
     private static final Logger log = LoggerFactory.getLogger(WebhookController.class);
 
+    private final CodeReviewService codeReviewService;
+
+    public WebhookController(CodeReviewService codeReviewService) {
+        this.codeReviewService = codeReviewService;
+    }
+
     @PostMapping("/github")
     public ResponseEntity<String> handleGithubWebhook(
             @RequestHeader("X-GitHub-Event") String eventType,
             @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature,
-            @RequestBody String payload) {
+            @RequestBody PullRequestEvent event) {
 
         log.info("Received GitHub event: {}", eventType);
 
@@ -29,7 +32,7 @@ public class WebhookController {
         }
 
         log.info("Pull request event received, triggering review...");
-        // CodeReviewService will be called here once we build it
+        new Thread(() -> codeReviewService.handlePullRequestEvent(event)).start();
         return ResponseEntity.ok("Review triggered");
     }
 }
