@@ -32,7 +32,7 @@ public class WebhookController {
         }
 
         log.info("Pull request event received, triggering review...");
-        new Thread(() -> codeReviewService.handlePullRequestEvent(event)).start();
+        codeReviewService.handlePullRequestEvent(event);
         return ResponseEntity.ok("Review triggered");
     }
 }

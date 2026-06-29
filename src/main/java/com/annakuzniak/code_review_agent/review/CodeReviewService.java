@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Async;
 
 @Service
 public class CodeReviewService {
@@ -25,6 +26,7 @@ public class CodeReviewService {
         this.vectorStore = vectorStore;
     }
 
+    @Async("reviewTaskExecutor")
     public void handlePullRequestEvent(PullRequestEvent event) {
         String action = event.action();
 
