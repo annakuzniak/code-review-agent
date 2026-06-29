@@ -24,6 +24,10 @@ public class WebhookController {
             @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature,
             @RequestBody PullRequestEvent event) {
 
+
+
+
+                
         log.info("Received GitHub event: {}", eventType);
 
         if (!"pull_request".equals(eventType)) {

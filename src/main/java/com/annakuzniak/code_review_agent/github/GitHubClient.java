@@ -13,6 +13,7 @@ public class GitHubClient {
 
     private final RestClient restClient;
 
+    //Let's see if this magic works
     public GitHubClient(@Value("${github.token}") String githubToken) {
         this.restClient = RestClient.builder()
                 .baseUrl("https://api.github.com")
@@ -37,6 +38,7 @@ public class GitHubClient {
 
         var request = new ReviewCommentRequest("COMMENT", body);
 
+        //Let's see if this magic works
         restClient.post()
                 .uri("/repos/{owner}/{repo}/pulls/{prNumber}/reviews", owner, repo, prNumber)
                 .body(request)
