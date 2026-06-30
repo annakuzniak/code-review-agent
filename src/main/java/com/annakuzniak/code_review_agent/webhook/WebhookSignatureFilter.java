@@ -1,18 +1,21 @@
 package com.annakuzniak.code_review_agent.webhook;
 
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -34,16 +37,13 @@ public class WebhookSignatureFilter extends OncePerRequestFilter {
                                      HttpServletResponse response,
                                      FilterChain filterChain) throws ServletException, IOException {
 
-        // Only validate requests to our webhook endpoint
         if (!request.getRequestURI().equals("/webhook/github")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(request, 0);
-
-        // We must read the body to cache it before validation
-        wrappedRequest.getInputStream().readAllBytes();
+        byte[] bodyBytes = request.getInputStream().readAllBytes();
+        String payload = new String(bodyBytes, StandardCharsets.UTF_8);
 
         String signature = request.getHeader("X-Hub-Signature-256");
 
@@ -53,8 +53,6 @@ public class WebhookSignatureFilter extends OncePerRequestFilter {
             return;
         }
 
-        String payload = new String(wrappedRequest.getContentAsByteArray(), StandardCharsets.UTF_8);
-
         if (!isValidSignature(payload, signature)) {
             log.warn("Rejected webhook request: invalid signature");
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid signature");
@@ -62,6 +60,35 @@ public class WebhookSignatureFilter extends OncePerRequestFilter {
         }
 
         log.info("Webhook signature validated successfully");
+
+        // Wrap request so the body can be read again downstream
+        HttpServletRequestWrapper wrappedRequest = new HttpServletRequestWrapper(request) {
+            @Override
+            public ServletInputStream getInputStream() {
+                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bodyBytes);
+                return new ServletInputStream() {
+                    @Override
+                    public boolean isFinished() {
+                        return byteArrayInputStream.available() == 0;
+                    }
+
+                    @Override
+                    public boolean isReady() {
+                        return true;
+                    }
+
+                    @Override
+                    public void setReadListener(ReadListener readListener) {
+                    }
+
+                    @Override
+                    public int read() {
+                        return byteArrayInputStream.read();
+                    }
+                };
+            }
+        };
+
         filterChain.doFilter(wrappedRequest, response);
     }
 
