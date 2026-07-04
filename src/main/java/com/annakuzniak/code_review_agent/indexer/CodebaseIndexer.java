@@ -36,6 +36,7 @@ public class CodebaseIndexer {
 
         List<Document> documents = new ArrayList<>();
 
+        //Walk the codebase path and index the files
         try (Stream<Path> paths = Files.walk(Paths.get(codebasePath))) {
             paths.filter(Files::isRegularFile)
                  .filter(p -> p.toString().endsWith(".java"))
