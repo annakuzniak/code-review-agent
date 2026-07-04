@@ -18,6 +18,7 @@ public class IndexerController {
         this.codebaseIndexer = codebaseIndexer;
     }
 
+    //This is a manual endpoint to index the codebase. It's used to index the codebase when the application is started.
     @PostMapping("/index")
     public ResponseEntity<String> indexCodebase() {
         log.info("Manual indexing triggered");
