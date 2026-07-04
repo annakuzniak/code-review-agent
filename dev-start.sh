@@ -6,4 +6,4 @@ echo "⏳ Waiting for database to be ready..."
 sleep 2
 
 echo "🚀 Starting code-review-agent..."
-./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+MAVEN_OPTS="-Xmx512m" ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
